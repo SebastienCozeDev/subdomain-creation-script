@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# Check if the two arguments were provided.
+if [ "$#" -ne 2 ]; then
+  echo "USAGE: $0 <subdomain> <port>"
+  exit 1
+fi
+
+# Collect the arguments
+subdomain="$1"
+port="$2"
+
+
+
+# Step 1: Create a DNS entry with the OVH's API.
+API=ENDPOINT="https://eu.api.ovh.com/1.0"
+API_APPLICATION_KEY="YourApplicationKey"
+API_APPLICATION_SECRET="YourApplicationSecret"
+API_CONSUMER_KEY="YourConsumerKey"
+ZONE="your-dns-zone.com"
+VPS_IP="51.68.47.238"
+
+curl -X POST "$API_ENDPOINT/domain/zone/$ZONE/record" -H "X-Ovh-Application:$API_APPLICATION_KEY" -H "X-Ovh-Consumer:$API_CONSUMER_KEY" -H "Content-type: application/json" --data '{
+  "fieldType": "A",
+  "subDomain": "'"$subdomain"'",
+  "target": "'"$VPS_IP"'"
+}'
+
+
+
+# Step 2: Create a folder to include application files.
+mkdir -p /home/debian/host/"$subdomain"
+
+
+
+# Step 3: Add the Nginx configuration.
