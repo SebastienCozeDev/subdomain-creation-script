@@ -1,36 +1,60 @@
 #!/bin/bash
 
-# Check if the two arguments were provided.
+# Check that two arguments have been provided.
 if [ "$#" -ne 2 ]; then
-  echo "USAGE: $0 <subdomain> <port>"
-  exit 1
+    echo "USAGE: $0 <subdomain> <port>"
+    exit 1
 fi
 
-# Collect the arguments
+# Collect the arguments.
 subdomain="$1"
 port="$2"
 
+# Set the VPS IP.
+VPS_IP="XXX.XXX.XXX.XXX"
+DOMAIN="your-domain.com"
 
 
-# Step 1: Create a DNS entry with the OVH's API.
-API=ENDPOINT="https://eu.api.ovh.com/1.0"
+
+# Sep 1 : Create a DNS entry with the OVH API.
+API_ENDPOINT="https://eu.api.ovh.com/1.0"
 API_APPLICATION_KEY="YourApplicationKey"
 API_APPLICATION_SECRET="YourApplicationSecret"
 API_CONSUMER_KEY="YourConsumerKey"
 ZONE="your-dns-zone.com"
-VPS_IP="51.68.47.238"
 
 curl -X POST "$API_ENDPOINT/domain/zone/$ZONE/record" -H "X-Ovh-Application:$API_APPLICATION_KEY" -H "X-Ovh-Consumer:$API_CONSUMER_KEY" -H "Content-type: application/json" --data '{
-  "fieldType": "A",
-  "subDomain": "'"$subdomain"'",
-  "target": "'"$VPS_IP"'"
+    "fieldType": "A",
+    "subDomain": "'"$subdomain"'",
+    "target": "'"$VPS_IP"'"
 }'
 
 
 
-# Step 2: Create a folder to include application files.
-mkdir -p /home/debian/host/"$subdomain"
+# Step 2 : Create a folder in /home/debian/host/ the include the files & folder of the application.
+mkdir -p /home/debian/host/"$sous_domaine"
 
 
 
-# Step 3: Add the Nginx configuration.
+# Step 3 : Add the Nginx configuration.
+echo "server {
+    listen 80;
+    server_name $subdomain.$DOMAIN;
+
+    location / {
+        proxy_pass http://127.0.0.1:$port;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+}" > /etc/nginx/sites-available/"$subdomain"
+
+ln -s /etc/nginx/sites-available/"$sous_domaine" /etc/nginx/sites-enabled/
+
+if nginx -t; then
+    systemctl reload nginx
+else
+    echo "Syntax error in Nginx configuration. No changes applied."
+    exit 1
+fi
+
+echo "Configuration completed for $subdomain.$DOMAIN. The DNS entry was created, the folder was created in /home/debian/host/, and the Nginx configuration was added."
